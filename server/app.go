@@ -30,15 +30,15 @@ func (a *App) Run(port string) error {
 	router := gin.Default()
 	router.Use(
 		gin.Recovery(),
-		gin.Logger()
+		gin.Logger(),
 	)
 
 	// HTTP Server
 	a.httpServer = &http.Server{
-		Addr: ":" + port,
-		Handler: router,
-		ReadTimeout: 10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:           ":" + port,
+		Handler:        router,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
