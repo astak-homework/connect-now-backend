@@ -72,7 +72,7 @@ func initDB() *pgxpool.Pool {
 
 	conn, err := pgxpool.NewWithConfig(context.Background(), dbConfig)
 	if err != nil {
-		log.Fatal().Err(err).Msg()
+		log.Fatal().Err(err).Msg("")
 	}
 
 	err = conn.Ping(context.Background())
