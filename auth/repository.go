@@ -7,6 +7,6 @@ import (
 )
 
 type LoginRepository interface {
-	CreateLogin(ctx context.Context, login *models.Login)
+	CreateLogin(ctx context.Context, login *models.Login) error
 	GetLogin(ctx context.Context, username, password string) (*models.Login, error)
 }

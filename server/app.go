@@ -7,6 +7,12 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/astak-homework/connect-now-backend/auth"
+	authpostgres "github.com/astak-homework/connect-now-backend/auth/repository/postgresql"
+	authusecase "github.com/astak-homework/connect-now-backend/auth/usecase"
+	"github.com/astak-homework/connect-now-backend/profile"
+	profilepostgres "github.com/astak-homework/connect-now-backend/profile/repository/postgresql"
+	profileusecase "github.com/astak-homework/connect-now-backend/profile/usecase"
 	"github.com/gin-gonic/gin"
 	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
 	"github.com/jackc/pgx/v5"
@@ -17,12 +23,21 @@ import (
 
 type App struct {
 	httpServer *http.Server
+
+	authUseCase    auth.UseCase
+	profileUseCase profile.UseCase
 }
 
 func NewApp() *App {
-	initDB()
+	conn := initDB()
 
-	return &App{}
+	loginRepo := authpostgres.NewLoginRepository(conn, viper.GetString("postgresql.login_table"))
+	profileRepo := profilepostgres.NewProfileRepository(conn, viper.GetString("postgresql.profile_table"))
+
+	return &App{
+		authUseCase:    authusecase.NewAuthUseCase(loginRepo, viper.GetString("auth.hash_salt"), []byte(viper.GetString("auth.signing_key")), viper.GetDuration("auth.token_ttl")),
+		profileUseCase: profileusecase.NewProfileUseCase(profileRepo),
+	}
 }
 
 func (a *App) Run(port string) error {
