@@ -7,4 +7,5 @@ auth:
 
 postgresql:
   uri: "postgresql://user:password@host:5432/connect"
-  user_collection: "users"
+  login_collection: "logins"
+  profile_collection: "profiles"

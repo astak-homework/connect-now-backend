@@ -11,7 +11,7 @@ const (
 
 type Profile struct {
 	ID        string
-	Account   Login
+	Account   *Login
 	FirstName string
 	LastName  string
 	BirthDate time.Time
