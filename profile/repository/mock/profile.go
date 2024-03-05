@@ -16,12 +16,12 @@ func (s *ProfileStorageMock) CreateProfile(ctx context.Context, profile *models.
 	return args.Error(0)
 }
 
-func (s *ProfileStorageMock) GetProfile(ctx context.Context, account *models.Login) (*models.Profile, error) {
-	args := s.Called(account)
+func (s *ProfileStorageMock) GetProfile(ctx context.Context, id string) (*models.Profile, error) {
+	args := s.Called(id)
 	return args.Get(0).(*models.Profile), args.Error(1)
 }
 
-func (s *ProfileStorageMock) DeleteProfile(ctx context.Context, account *models.Login) error {
-	args := s.Called(account)
+func (s *ProfileStorageMock) DeleteProfile(ctx context.Context, id string) error {
+	args := s.Called(id)
 	return args.Error(0)
 }

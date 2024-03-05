@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/astak-homework/connect-now-backend/auth"
+	authhttp "github.com/astak-homework/connect-now-backend/auth/delivery/http"
 	authpostgres "github.com/astak-homework/connect-now-backend/auth/repository/postgresql"
 	authusecase "github.com/astak-homework/connect-now-backend/auth/usecase"
 	"github.com/astak-homework/connect-now-backend/profile"
+	profilehttp "github.com/astak-homework/connect-now-backend/profile/delivery/http"
 	profilepostgres "github.com/astak-homework/connect-now-backend/profile/repository/postgresql"
 	profileusecase "github.com/astak-homework/connect-now-backend/profile/usecase"
 	"github.com/gin-gonic/gin"
@@ -47,6 +49,16 @@ func (a *App) Run(port string) error {
 		gin.Recovery(),
 		gin.Logger(),
 	)
+
+	// Set up http handlers
+	// SignUp/SignIn endpoints
+	authhttp.RegisterHTTPEndpoints(router, a.authUseCase)
+
+	// API endpoints
+	authMiddleware := authhttp.NewAuthMiddleware(a.authUseCase)
+	api := router.Group("/api", authMiddleware)
+
+	profilehttp.RegisterHTTPEndpoints(api, a.profileUseCase)
 
 	// HTTP Server
 	a.httpServer = &http.Server{

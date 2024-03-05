@@ -18,9 +18,9 @@ func NewProfileUseCase(profileRepo profile.Repository) *ProfileUseCase {
 	}
 }
 
-func (p ProfileUseCase) CreateProfile(ctx context.Context, account *models.Login, firstName, lastName string, birthDate time.Time, gender models.Gender, biography, city string) error {
+func (p ProfileUseCase) CreateProfile(ctx context.Context, id, firstName, lastName string, birthDate time.Time, gender models.Gender, biography, city string) error {
 	profile := &models.Profile{
-		Account:   account,
+		ID:        id,
 		FirstName: firstName,
 		LastName:  lastName,
 		BirthDate: birthDate,
@@ -31,10 +31,10 @@ func (p ProfileUseCase) CreateProfile(ctx context.Context, account *models.Login
 	return p.profileRepo.CreateProfile(ctx, profile)
 }
 
-func (p ProfileUseCase) GetProfile(ctx context.Context, account *models.Login) (*models.Profile, error) {
-	return p.profileRepo.GetProfile(ctx, account)
+func (p ProfileUseCase) GetProfile(ctx context.Context, id string) (*models.Profile, error) {
+	return p.profileRepo.GetProfile(ctx, id)
 }
 
-func (p ProfileUseCase) DeleteProfile(ctx context.Context, account *models.Login) error {
-	return p.profileRepo.DeleteProfile(ctx, account)
+func (p ProfileUseCase) DeleteProfile(ctx context.Context, id string) error {
+	return p.profileRepo.DeleteProfile(ctx, id)
 }

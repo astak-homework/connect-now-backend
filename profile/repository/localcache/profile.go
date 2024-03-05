@@ -6,7 +6,6 @@ import (
 
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/astak-homework/connect-now-backend/profile"
-	"github.com/google/uuid"
 )
 
 type ProfileLocalStorage struct {
@@ -23,40 +22,32 @@ func NewProfileLocalStorage() *ProfileLocalStorage {
 
 func (s *ProfileLocalStorage) CreateProfile(ctx context.Context, profile *models.Profile) error {
 	s.mutex.Lock()
-	profile.ID = uuid.NewString()
 	s.profiles[profile.ID] = profile
 	s.mutex.Unlock()
 	return nil
 }
 
-func (s *ProfileLocalStorage) GetProfile(ctx context.Context, account *models.Login) (*models.Profile, error) {
+func (s *ProfileLocalStorage) GetProfile(ctx context.Context, id string) (*models.Profile, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	for _, p := range s.profiles {
-		if p.Account.ID == account.ID {
-			return p, nil
-		}
+	p, ok := s.profiles[id]
+	if !ok {
+		return nil, profile.ErrProfileNotFound
 	}
 
-	return nil, profile.ErrProfileNotFound
+	return p, nil
 }
 
-func (s *ProfileLocalStorage) DeleteProfile(ctx context.Context, account *models.Login) error {
+func (s *ProfileLocalStorage) DeleteProfile(ctx context.Context, id string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	ok := false
-	for key, p := range s.profiles {
-		if p.Account.ID == account.ID {
-			delete(s.profiles, key)
-			ok = true
-		}
-	}
-
+	p, ok := s.profiles[id]
 	if !ok {
 		return profile.ErrProfileNotFound
 	}
 
+	delete(s.profiles, p.ID)
 	return nil
 }

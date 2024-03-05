@@ -13,14 +13,14 @@ import (
 )
 
 type Profile struct {
-	ID        string    `db:"ID"`
-	AccountID string    `db:"account_id"`
-	FirstName string    `db:"first_name"`
-	LastName  string    `db:"last_name"`
-	BirthDate time.Time `db:"birth_date"`
-	Gender    string    `db:"gender"`
-	Biography string    `db:"biography"`
-	City      string    `db:"city"`
+	ID        string        `db:"ID"`
+	AccountID string        `db:"account_id"`
+	FirstName string        `db:"first_name"`
+	LastName  string        `db:"last_name"`
+	BirthDate time.Time     `db:"birth_date"`
+	Gender    models.Gender `db:"gender"`
+	Biography string        `db:"biography"`
+	City      string        `db:"city"`
 }
 
 type ProfileRepository struct {
@@ -39,48 +39,43 @@ func (r ProfileRepository) CreateProfile(ctx context.Context, profile *models.Pr
 	model := toModel(profile)
 
 	sql := `
-	INSERT INTO %s (account_id, first_name, last_name, birth_date, gender, biography, city)
+	INSERT INTO %s (id, first_name, last_name, birth_date, gender, biography, city)
 	VALUES ($1, $2, $3, $4, $5, $6, $6)
-	RETURNING id
 	`
 	sql = fmt.Sprintf(sql, r.table)
 
-	err := r.conn.QueryRow(ctx, sql, profile.Account.ID, profile.FirstName, profile.LastName, profile.BirthDate, profile.Gender, profile.Biography, profile.City).Scan(&model.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := r.conn.Exec(ctx, sql, model.ID, model.FirstName, model.LastName, model.BirthDate, model.Gender, model.Biography, model.City)
+	return err
 }
 
-func (r ProfileRepository) GetProfile(ctx context.Context, account *models.Login) (*models.Profile, error) {
+func (r ProfileRepository) GetProfile(ctx context.Context, id string) (*models.Profile, error) {
 	model := new(Profile)
 
 	sql := `
-	SELECT id, account_id, first_name, last_name, birth_date, gender, biography, city
+	SELECT id, first_name, last_name, birth_date, gender, biography, city
 	FROM %s
-	WHERE account_id = $1
+	WHERE id = $1
 	`
 	sql = fmt.Sprintf(sql, r.table)
 
-	err := r.conn.QueryRow(ctx, sql, account.ID).Scan(&model)
+	err := r.conn.QueryRow(ctx, sql, id).Scan(&model)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, profile.ErrProfileNotFound
 	} else if err != nil {
 		return nil, err
 	}
 
-	return toProfile(model, account), nil
+	return toProfile(model), nil
 }
 
-func (r ProfileRepository) DeleteProfile(ctx context.Context, account *models.Login) error {
+func (r ProfileRepository) DeleteProfile(ctx context.Context, id string) error {
 	sql := `
 	DELETE %s
 	WHERE account_id = $1
 	`
 	sql = fmt.Sprintf(sql, r.table)
 
-	_, err := r.conn.Exec(ctx, sql, account.ID)
+	_, err := r.conn.Exec(ctx, sql, id)
 	if err != nil {
 		return err
 	}
@@ -91,24 +86,22 @@ func (r ProfileRepository) DeleteProfile(ctx context.Context, account *models.Lo
 func toModel(p *models.Profile) *Profile {
 	return &Profile{
 		ID:        p.ID,
-		AccountID: p.Account.ID,
 		FirstName: p.FirstName,
 		LastName:  p.LastName,
 		BirthDate: p.BirthDate,
-		Gender:    string(p.Gender),
+		Gender:    p.Gender,
 		Biography: p.Biography,
 		City:      p.City,
 	}
 }
 
-func toProfile(p *Profile, account *models.Login) *models.Profile {
+func toProfile(p *Profile) *models.Profile {
 	return &models.Profile{
 		ID:        p.ID,
-		Account:   account,
 		FirstName: p.FirstName,
 		LastName:  p.LastName,
 		BirthDate: p.BirthDate,
-		Gender:    models.Gender(p.Gender),
+		Gender:    p.Gender,
 		Biography: p.Biography,
 		City:      p.City,
 	}
