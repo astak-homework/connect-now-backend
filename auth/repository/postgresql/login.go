@@ -3,7 +3,6 @@ package postgresql
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/astak-homework/connect-now-backend/auth"
 	"github.com/astak-homework/connect-now-backend/models"
@@ -19,14 +18,12 @@ type Login struct {
 }
 
 type LoginRepository struct {
-	conn  *pgxpool.Pool
-	table string
+	conn *pgxpool.Pool
 }
 
-func NewLoginRepository(conn *pgxpool.Pool, tableName string) *LoginRepository {
+func NewLoginRepository(conn *pgxpool.Pool) *LoginRepository {
 	return &LoginRepository{
-		conn:  conn,
-		table: tableName,
+		conn: conn,
 	}
 }
 
@@ -34,10 +31,9 @@ func (r LoginRepository) CreateLogin(ctx context.Context, login *models.Login) e
 	model := toModel(login)
 
 	sql := `
-	INSERT INTO %s (user_name, password_hash)
+	INSERT INTO logins (user_name, password_hash)
 	VALUES ($1, $2)
 	`
-	sql = fmt.Sprintf(sql, r.table)
 
 	_, err := r.conn.Exec(ctx, sql, model.UserName, model.Password)
 	if err != nil {
@@ -52,10 +48,9 @@ func (r LoginRepository) GetLogin(ctx context.Context, username, password string
 
 	sql := `
 	SELECT id, user_name, password_hash
-	FROM %s
+	FROM logins
 	WHERE user_name = $1 and password_hash = $2
 	`
-	sql = fmt.Sprintf(sql, r.table)
 
 	rows, err := r.conn.Query(ctx, sql, username, password)
 	if err != nil {

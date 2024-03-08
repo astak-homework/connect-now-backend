@@ -3,7 +3,6 @@ package postgresql
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/astak-homework/connect-now-backend/models"
@@ -24,14 +23,12 @@ type Profile struct {
 }
 
 type ProfileRepository struct {
-	conn  *pgxpool.Pool
-	table string
+	conn *pgxpool.Pool
 }
 
-func NewProfileRepository(conn *pgxpool.Pool, tableName string) *ProfileRepository {
+func NewProfileRepository(conn *pgxpool.Pool) *ProfileRepository {
 	return &ProfileRepository{
-		conn:  conn,
-		table: tableName,
+		conn: conn,
 	}
 }
 
@@ -39,10 +36,9 @@ func (r ProfileRepository) CreateProfile(ctx context.Context, profile *models.Pr
 	model := toModel(profile)
 
 	sql := `
-	INSERT INTO %s (id, first_name, last_name, birth_date, gender, biography, city)
+	INSERT INTO profiles (id, first_name, last_name, birth_date, gender, biography, city)
 	VALUES ($1, $2, $3, $4, $5, $6, $6)
 	`
-	sql = fmt.Sprintf(sql, r.table)
 
 	_, err := r.conn.Exec(ctx, sql, model.ID, model.FirstName, model.LastName, model.BirthDate, model.Gender, model.Biography, model.City)
 	return err
@@ -53,10 +49,9 @@ func (r ProfileRepository) GetProfile(ctx context.Context, id string) (*models.P
 
 	sql := `
 	SELECT id, first_name, last_name, birth_date, gender, biography, city
-	FROM %s
+	FROM profiles
 	WHERE id = $1
 	`
-	sql = fmt.Sprintf(sql, r.table)
 
 	err := r.conn.QueryRow(ctx, sql, id).Scan(&model)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -70,10 +65,9 @@ func (r ProfileRepository) GetProfile(ctx context.Context, id string) (*models.P
 
 func (r ProfileRepository) DeleteProfile(ctx context.Context, id string) error {
 	sql := `
-	DELETE %s
+	DELETE profiles
 	WHERE account_id = $1
 	`
-	sql = fmt.Sprintf(sql, r.table)
 
 	_, err := r.conn.Exec(ctx, sql, id)
 	if err != nil {

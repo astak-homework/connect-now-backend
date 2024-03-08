@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/astak-homework/connect-now-backend/auth"
+	"github.com/astak-homework/connect-now-backend/config"
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -24,12 +25,12 @@ type AuthUseCase struct {
 	expireDuration time.Duration
 }
 
-func NewAuthUseCase(loginRepo auth.LoginRepository, hashSalt string, signingKey []byte, tokenTTL time.Duration) *AuthUseCase {
+func NewAuthUseCase(loginRepo auth.LoginRepository, cfg *config.Auth) *AuthUseCase {
 	return &AuthUseCase{
 		loginRepo:      loginRepo,
-		hashSalt:       hashSalt,
-		signingKey:     signingKey,
-		expireDuration: time.Second * tokenTTL,
+		hashSalt:       cfg.HashSalt,
+		signingKey:     []byte(cfg.SigningKey),
+		expireDuration: time.Second * cfg.TokenTTL,
 	}
 }
 

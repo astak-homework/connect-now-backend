@@ -4,17 +4,17 @@ import (
 	"github.com/astak-homework/connect-now-backend/config"
 	"github.com/astak-homework/connect-now-backend/server"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 func main() {
-	if err := config.Init(); err != nil {
+	cfg, err := config.Init()
+	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
 
-	app := server.NewApp()
+	app := server.NewApp(cfg)
 
-	if err := app.Run(viper.GetString("port")); err != nil {
+	if err := app.Run(cfg.Port); err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
 }
