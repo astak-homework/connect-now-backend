@@ -35,8 +35,6 @@ services:
       POSTGRES_USER_FILE: /run/secrets/postgres_user
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB_FILE: /run/secrets/postgres_db
-    ports:
-    - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 1s
@@ -46,12 +44,6 @@ services:
     - postgres_user
     - postgres_password
     - postgres_db
-
-  adminer:
-    image: adminer:4.8.1
-    restart: always
-    ports:
-    - 8080:8080
 
 secrets:
   auth_hash_salt:
