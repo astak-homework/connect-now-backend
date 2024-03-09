@@ -24,7 +24,7 @@ func TestAuthFlow(t *testing.T) {
 		ctx      = context.Background()
 		login    = &models.Login{
 			UserName: username,
-			Password: "11f5639f22525155cb0b43573ee4212838c78d87", // sha1 of pass+salt
+			Password: "c8b2505b76926abdc733523caa9f439142f66aa7293a7baaac0aed41a191eef6", // sha256 of pass+salt
 		}
 	)
 

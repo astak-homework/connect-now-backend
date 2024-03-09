@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
 	"time"
 
@@ -35,7 +35,7 @@ func NewAuthUseCase(loginRepo auth.LoginRepository, cfg *config.Auth) *AuthUseCa
 }
 
 func (a *AuthUseCase) SignUp(ctx context.Context, username, password string) error {
-	pwd := sha1.New()
+	pwd := sha256.New()
 	pwd.Write([]byte(password))
 	pwd.Write([]byte(a.hashSalt))
 
@@ -48,7 +48,7 @@ func (a *AuthUseCase) SignUp(ctx context.Context, username, password string) err
 }
 
 func (a *AuthUseCase) SignIn(ctx context.Context, username, password string) (string, error) {
-	pwd := sha1.New()
+	pwd := sha256.New()
 	pwd.Write([]byte(password))
 	pwd.Write([]byte(a.hashSalt))
 	password = fmt.Sprintf("%x", pwd.Sum(nil))
