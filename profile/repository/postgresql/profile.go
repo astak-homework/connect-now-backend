@@ -12,8 +12,7 @@ import (
 )
 
 type Profile struct {
-	ID        string        `db:"ID"`
-	AccountID string        `db:"account_id"`
+	ID        string        `db:"id"`
 	FirstName string        `db:"first_name"`
 	LastName  string        `db:"last_name"`
 	BirthDate time.Time     `db:"birth_date"`

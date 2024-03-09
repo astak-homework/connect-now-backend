@@ -14,8 +14,8 @@ services:
       CONNECT_POSTGRES_HOST: db
       GIN_MODE: release
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
     - "80:80"
     secrets:
@@ -24,6 +24,15 @@ services:
     - postgres_user
     - postgres_password
     - postgres_db
+  
+  migrate:
+    image: migrate/migrate:v4.17.0
+    volumes:
+    - ./migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable", "up"]
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     container_name: connect_now_postgresql
