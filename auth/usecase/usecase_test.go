@@ -5,13 +5,19 @@ import (
 	"testing"
 
 	"github.com/astak-homework/connect-now-backend/auth/repository/mock"
+	"github.com/astak-homework/connect-now-backend/config"
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAuthFlow(t *testing.T) {
 	repo := new(mock.LoginStorageMock)
-	uc := NewAuthUseCase(repo, "salt", []byte("secret"), 86400)
+	cfg := &config.Auth{
+		HashSalt:   "salt",
+		SigningKey: "secret",
+		TokenTTL:   86400,
+	}
+	uc := NewAuthUseCase(repo, cfg)
 	var (
 		username = "user"
 		password = "pass"
