@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"time"
 
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/stretchr/testify/mock"
@@ -12,8 +11,8 @@ type ProfileUseCaseMock struct {
 	mock.Mock
 }
 
-func (m *ProfileUseCaseMock) CreateProfile(ctx context.Context, id, firstName, lastName string, birthDate time.Time, gender models.Gender, biography, city string) error {
-	args := m.Called(id, firstName, lastName, birthDate, gender, biography, city)
+func (m *ProfileUseCaseMock) CreateProfile(ctx context.Context, profile *models.Profile) error {
+	args := m.Called(profile)
 	return args.Error(0)
 }
 

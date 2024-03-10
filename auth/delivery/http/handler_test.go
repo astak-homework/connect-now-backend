@@ -12,27 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSignUp(t *testing.T) {
-	r := gin.Default()
-	uc := new(usecase.AuthUseCaseMock)
-	RegisterHTTPEndpoints(r, uc)
-
-	signUpBody := &signInput{
-		UserName: "testuser",
-		Password: "testpass",
-	}
-	body, err := json.Marshal(signUpBody)
-	assert.NoError(t, err)
-
-	uc.On("SignUp", signUpBody.UserName, signUpBody.Password).Return(nil)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/auth/sign-up", bytes.NewBuffer(body))
-	r.ServeHTTP(w, req)
-
-	assert.Equal(t, 200, w.Code)
-}
-
 func TestSignIn(t *testing.T) {
 	r := gin.Default()
 	uc := new(usecase.AuthUseCaseMock)
@@ -40,16 +19,16 @@ func TestSignIn(t *testing.T) {
 	RegisterHTTPEndpoints(r, uc)
 
 	signInBody := &signInput{
-		UserName: "testuser",
-		Password: "testpass",
+		AccountId: "testuser",
+		Password:  "testpass",
 	}
 	body, err := json.Marshal(signInBody)
 	assert.NoError(t, err)
 
-	uc.On("SignIn", signInBody.UserName, signInBody.Password).Return("jwt", nil)
+	uc.On("SignIn", signInBody.AccountId, signInBody.Password).Return("jwt", nil)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/auth/sign-in", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(body))
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)

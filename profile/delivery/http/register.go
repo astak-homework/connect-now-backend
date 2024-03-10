@@ -1,17 +1,14 @@
 package http
 
 import (
+	"github.com/astak-homework/connect-now-backend/auth"
 	"github.com/astak-homework/connect-now-backend/profile"
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterHTTPEndpoints(router *gin.RouterGroup, uc profile.UseCase) {
-	h := NewHandler(uc)
+func RegisterHTTPEndpoints(router *gin.RouterGroup, authUseCase auth.UseCase, profileUseCase profile.UseCase) {
+	h := NewHandler(authUseCase, profileUseCase)
 
-	profiles := router.Group("/profiles")
-	{
-		profiles.POST("", h.Create)
-		profiles.GET("", h.Get)
-		profiles.DELETE("", h.Delete)
-	}
+	router.POST("/register", h.Create)
+	router.GET("/get/:id", h.Get)
 }

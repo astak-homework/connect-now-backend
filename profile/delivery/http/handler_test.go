@@ -2,138 +2,97 @@ package http
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/astak-homework/connect-now-backend/auth"
+	usecaseAuth "github.com/astak-homework/connect-now-backend/auth/usecase"
 	"github.com/astak-homework/connect-now-backend/models"
-	"github.com/astak-homework/connect-now-backend/profile/usecase"
+	usecaseProfile "github.com/astak-homework/connect-now-backend/profile/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestCreate(t *testing.T) {
-	testLogin := &models.Login{
-		ID:       "id",
-		UserName: "testUser",
-		Password: "testpass",
-	}
+	testAccountId := "id"
 
 	r := gin.Default()
-	group := r.Group("/api", func(c *gin.Context) {
-		c.Set(auth.CtxLoginKey, testLogin)
-	})
+	group := r.Group("/user")
 
-	uc := new(usecase.ProfileUseCaseMock)
+	authUseCase := new(usecaseAuth.AuthUseCaseMock)
+	profileUseCase := new(usecaseProfile.ProfileUseCaseMock)
 
-	RegisterHTTPEndpoints(group, uc)
+	RegisterHTTPEndpoints(group, authUseCase, profileUseCase)
 
-	inp := &createInput{
+	body := `
+	{
+		"first_name": "testfirstname",
+		"second_name": "testlastname",
+		"birthdate": "2017-02-01",
+		"gender": "male",
+		"biography": "testbiography",
+		"city": "testcity",
+		"password": "testpassword"
+	}
+	`
+	profile := &models.Profile{
+		ID:        testAccountId,
 		FirstName: "testfirstname",
 		LastName:  "testlastname",
-		BirthDate: time.Now(),
+		BirthDate: time.Date(2017, time.February, 1, 0, 0, 0, 0, time.UTC),
 		Gender:    models.GenderMale,
 		Biography: "testbiography",
 		City:      "testcity",
 	}
 
-	body, err := json.Marshal(inp)
-	assert.NoError(t, err)
-
-	birthDateMock := mock.MatchedBy(func(birthDate time.Time) bool { return birthDate.Equal(inp.BirthDate) })
-	uc.On("CreateProfile", testLogin.ID, inp.FirstName, inp.LastName, birthDateMock, inp.Gender, inp.Biography, inp.City).Return(nil)
+	authUseCase.On("SignUp", "testpassword").Return(testAccountId, nil)
+	profileUseCase.On("CreateProfile", profile).Return(nil)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/api/profiles", bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", "/user/register", bytes.NewBuffer([]byte(body)))
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
 }
 
 func TestGet(t *testing.T) {
-	accountId := "id"
-	birthDate := time.Now()
-
-	testAccount := &models.Login{
-		ID:       accountId,
-		UserName: "testuser",
-	}
-
 	r := gin.Default()
-	group := r.Group("/api", func(c *gin.Context) {
-		c.Set(auth.CtxLoginKey, testAccount)
-	})
+	group := r.Group("/user")
 
-	uc := new(usecase.ProfileUseCaseMock)
+	authUseCase := new(usecaseAuth.AuthUseCaseMock)
+	profileUseCase := new(usecaseProfile.ProfileUseCaseMock)
 
-	RegisterHTTPEndpoints(group, uc)
+	RegisterHTTPEndpoints(group, authUseCase, profileUseCase)
 
 	p := &models.Profile{
-		ID:        accountId,
+		ID:        "id",
 		FirstName: "firstname",
 		LastName:  "lastname",
-		BirthDate: birthDate,
+		BirthDate: time.Date(2017, time.February, 1, 0, 0, 0, 0, time.UTC),
 		Gender:    models.GenderMale,
 		Biography: "biography",
 		City:      "city",
 	}
 
-	uc.On("GetProfile", accountId).Return(p, nil)
+	profileUseCase.On("GetProfile", "id").Return(p, nil)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/profiles", nil)
+	req, _ := http.NewRequest("GET", "/user/get/id", nil)
 	r.ServeHTTP(w, req)
 
-	expectedOut := &getResponse{
-		ID:        accountId,
-		FirstName: "firstname",
-		LastName:  "lastname",
-		BirthDate: birthDate,
-		Gender:    models.GenderMale,
-		Biography: "biography",
-		City:      "city",
+	expectedOut := `
+	{
+		"id": "id",
+		"first_name": "firstname",
+		"second_name": "lastname",
+		"birthdate": "2017-02-01",
+		"gender": "male",
+		"biography": "biography",
+		"city": "city"
 	}
-
-	expectedOutBody, err := json.Marshal(expectedOut)
-	assert.NoError(t, err)
+	`
 
 	assert.Equal(t, 200, w.Code)
-	assert.JSONEq(t, string(expectedOutBody), w.Body.String())
-}
-
-func TestDelete(t *testing.T) {
-	accountId := "id"
-
-	testAccount := &models.Login{
-		ID:       accountId,
-		UserName: "testuser",
-	}
-
-	r := gin.Default()
-	group := r.Group("/api", func(c *gin.Context) {
-		c.Set(auth.CtxLoginKey, testAccount)
-	})
-
-	uc := new(usecase.ProfileUseCaseMock)
-
-	RegisterHTTPEndpoints(group, uc)
-
-	inp := &deleteInput{
-		ID: accountId,
-	}
-
-	body, err := json.Marshal(inp)
-	assert.NoError(t, err)
-
-	uc.On("DeleteProfile", accountId).Return(nil)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("DELETE", "/api/profiles", bytes.NewBuffer(body))
-	r.ServeHTTP(w, req)
-
-	assert.Equal(t, 200, w.Code)
+	assert.JSONEq(t, expectedOut, w.Body.String())
 }

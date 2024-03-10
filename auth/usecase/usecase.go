@@ -8,14 +8,12 @@ import (
 
 	"github.com/astak-homework/connect-now-backend/auth"
 	"github.com/astak-homework/connect-now-backend/config"
-	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthClaims struct {
 	jwt.RegisteredClaims
 	AccountID string `json:"account_id"`
-	UserName  string `json:"user_name"`
 }
 
 type AuthUseCase struct {
@@ -34,33 +32,29 @@ func NewAuthUseCase(loginRepo auth.LoginRepository, cfg *config.Auth) *AuthUseCa
 	}
 }
 
-func (a *AuthUseCase) SignUp(ctx context.Context, username, password string) error {
+func (a *AuthUseCase) SignUp(ctx context.Context, password string) (string, error) {
 	pwd := sha256.New()
 	pwd.Write([]byte(password))
 	pwd.Write([]byte(a.hashSalt))
 
-	login := &models.Login{
-		UserName: username,
-		Password: fmt.Sprintf("%x", pwd.Sum(nil)),
-	}
+	passwordHash := fmt.Sprintf("%x", pwd.Sum(nil))
 
-	return a.loginRepo.CreateLogin(ctx, login)
+	return a.loginRepo.CreateLogin(ctx, passwordHash)
 }
 
-func (a *AuthUseCase) SignIn(ctx context.Context, username, password string) (string, error) {
+func (a *AuthUseCase) SignIn(ctx context.Context, accountId, password string) (string, error) {
 	pwd := sha256.New()
 	pwd.Write([]byte(password))
 	pwd.Write([]byte(a.hashSalt))
-	password = fmt.Sprintf("%x", pwd.Sum(nil))
+	password_hash := fmt.Sprintf("%x", pwd.Sum(nil))
 
-	login, err := a.loginRepo.GetLogin(ctx, username, password)
+	err := a.loginRepo.AuthenticateLogin(ctx, accountId, password_hash)
 	if err != nil {
 		return "", err
 	}
 
 	claims := AuthClaims{
-		AccountID: login.ID,
-		UserName:  login.UserName,
+		AccountID: accountId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.expireDuration)),
 		},
@@ -69,7 +63,7 @@ func (a *AuthUseCase) SignIn(ctx context.Context, username, password string) (st
 	return token.SignedString(a.signingKey)
 }
 
-func (a *AuthUseCase) ParseToken(ctx context.Context, accessToken string) (*models.Login, error) {
+func (a *AuthUseCase) ParseToken(ctx context.Context, accessToken string) (string, error) {
 	token, err := jwt.ParseWithClaims(accessToken, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpectged signing method: %v", token.Header["alg"])
@@ -77,15 +71,12 @@ func (a *AuthUseCase) ParseToken(ctx context.Context, accessToken string) (*mode
 		return a.signingKey, nil
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
-		return &models.Login{
-			ID:       claims.AccountID,
-			UserName: claims.UserName,
-		}, nil
+		return claims.AccountID, nil
 	}
 
-	return nil, auth.ErrInvalidAccessToken
+	return "", auth.ErrInvalidAccessToken
 }

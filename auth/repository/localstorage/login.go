@@ -5,39 +5,37 @@ import (
 	"sync"
 
 	"github.com/astak-homework/connect-now-backend/auth"
-	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/google/uuid"
 )
 
 type LoginLocalStorage struct {
-	logins map[string]*models.Login
+	logins map[string]string
 	mutex  *sync.Mutex
 }
 
 func NewLoginLocalStorage() *LoginLocalStorage {
 	return &LoginLocalStorage{
-		logins: make(map[string]*models.Login),
+		logins: make(map[string]string),
 		mutex:  new(sync.Mutex),
 	}
 }
 
-func (s *LoginLocalStorage) CreateLogin(ctx context.Context, login *models.Login) error {
+func (s *LoginLocalStorage) CreateLogin(ctx context.Context, password string) (string, error) {
 	s.mutex.Lock()
-	login.ID = uuid.NewString()
-	s.logins[login.ID] = login
+	accountId := uuid.NewString()
+	s.logins[accountId] = password
 	s.mutex.Unlock()
-	return nil
+	return accountId, nil
 }
 
-func (s *LoginLocalStorage) GetLogin(ctx context.Context, username, password string) (*models.Login, error) {
+func (s *LoginLocalStorage) AuthenticateLogin(ctx context.Context, accountId, password_hash string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	for _, login := range s.logins {
-		if login.UserName == username && login.Password == password {
-			return login, nil
-		}
+	h, ok := s.logins[accountId]
+	if !ok || h != password_hash {
+		return auth.ErrUserNotFound
 	}
 
-	return nil, auth.ErrUserNotFound
+	return nil
 }

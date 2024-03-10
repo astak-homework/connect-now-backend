@@ -2,20 +2,10 @@ package postgresql
 
 import (
 	"context"
-	"errors"
 
 	"github.com/astak-homework/connect-now-backend/auth"
-	"github.com/astak-homework/connect-now-backend/models"
-	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type Login struct {
-	ID       string `db:"id"`
-	UserName string `db:"user_name"`
-	Password string `db:"password_hash"`
-}
 
 type LoginRepository struct {
 	conn *pgxpool.Pool
@@ -27,57 +17,37 @@ func NewLoginRepository(conn *pgxpool.Pool) *LoginRepository {
 	}
 }
 
-func (r LoginRepository) CreateLogin(ctx context.Context, login *models.Login) error {
-	model := toModel(login)
-
+func (r LoginRepository) CreateLogin(ctx context.Context, passwordHash string) (string, error) {
 	sql := `
-	INSERT INTO logins (user_name, password_hash)
-	VALUES ($1, $2)
+	INSERT INTO logins (password_hash)
+	VALUES ($1)
+	RETURNING id
 	`
 
-	_, err := r.conn.Exec(ctx, sql, model.UserName, model.Password)
+	var accountId string
+	err := r.conn.QueryRow(ctx, sql, passwordHash).Scan(&accountId)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return accountId, nil
 }
 
-func (r LoginRepository) GetLogin(ctx context.Context, username, password string) (*models.Login, error) {
-	model := new(Login)
-
+func (r LoginRepository) AuthenticateLogin(ctx context.Context, accountId, passwordHash string) error {
 	sql := `
 	SELECT id, user_name, password_hash
 	FROM logins
 	WHERE user_name = $1 and password_hash = $2
 	`
 
-	rows, err := r.conn.Query(ctx, sql, username, password)
+	rows, err := r.conn.Query(ctx, sql, accountId, passwordHash)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = pgxscan.ScanOne(model, rows)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, auth.ErrUserNotFound
-	} else if err != nil {
-		return nil, err
+	if !rows.Next() {
+		return auth.ErrUserNotFound
 	}
 
-	return toProfile(model), nil
-}
-
-func toModel(l *models.Login) *Login {
-	return &Login{
-		UserName: l.UserName,
-		Password: l.Password,
-	}
-}
-
-func toProfile(l *Login) *models.Login {
-	return &models.Login{
-		ID:       l.ID,
-		UserName: l.UserName,
-		Password: l.Password,
-	}
+	return nil
 }

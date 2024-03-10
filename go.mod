@@ -3,7 +3,6 @@ module github.com/astak-homework/connect-now-backend
 go 1.20
 
 require (
-	github.com/georgysavva/scany/v2 v2.1.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/uuid v1.6.0

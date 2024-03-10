@@ -13,8 +13,8 @@ type Handler struct {
 }
 
 type signInput struct {
-	UserName string `json:"username"`
-	Password string `json:"password"`
+	AccountId string `json:"id"`
+	Password  string `json:"password"`
 }
 
 type signInResponse struct {
@@ -27,21 +27,6 @@ func NewHandler(useCase auth.UseCase) *Handler {
 	}
 }
 
-func (h *Handler) SignUp(c *gin.Context) {
-	inp := new(signInput)
-	if err := c.BindJSON(inp); err != nil {
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	if err := h.useCase.SignUp(c.Request.Context(), inp.UserName, inp.Password); err != nil {
-		c.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
-
-	c.Status(http.StatusOK)
-}
-
 func (h *Handler) SignIn(c *gin.Context) {
 	inp := new(signInput)
 	if err := c.BindJSON(inp); err != nil {
@@ -49,7 +34,7 @@ func (h *Handler) SignIn(c *gin.Context) {
 		return
 	}
 
-	token, err := h.useCase.SignIn(c.Request.Context(), inp.UserName, inp.Password)
+	token, err := h.useCase.SignIn(c.Request.Context(), inp.AccountId, inp.Password)
 	if err != nil {
 		if errors.Is(err, auth.ErrUserNotFound) {
 			c.AbortWithStatus(http.StatusUnauthorized)

@@ -7,7 +7,6 @@ import (
 
 	"github.com/astak-homework/connect-now-backend/auth"
 	"github.com/astak-homework/connect-now-backend/auth/usecase"
-	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,7 +35,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	// Bearer Auth Header with not token request
 	w = httptest.NewRecorder()
-	uc.On("ParseToken", "").Return(&models.Login{}, auth.ErrInvalidAccessToken)
+	uc.On("ParseToken", "").Return("", auth.ErrInvalidAccessToken)
 
 	req.Header.Set("Authorization", "Bearer ")
 	r.ServeHTTP(w, req)
@@ -44,7 +43,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 	//Valid Auth Header
 	w = httptest.NewRecorder()
-	uc.On("ParseToken", "token").Return(&models.Login{}, nil)
+	uc.On("ParseToken", "token").Return("access token", nil)
 
 	req.Header.Set("Authorization", "Bearer token")
 	r.ServeHTTP(w, req)

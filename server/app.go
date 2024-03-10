@@ -56,10 +56,9 @@ func (a *App) Run(port string) error {
 	authhttp.RegisterHTTPEndpoints(router, a.authUseCase)
 
 	// API endpoints
-	authMiddleware := authhttp.NewAuthMiddleware(a.authUseCase)
-	api := router.Group("/api", authMiddleware)
+	user := router.Group("/user")
 
-	profilehttp.RegisterHTTPEndpoints(api, a.profileUseCase)
+	profilehttp.RegisterHTTPEndpoints(user, a.authUseCase, a.profileUseCase)
 
 	// HTTP Server
 	a.httpServer = &http.Server{
