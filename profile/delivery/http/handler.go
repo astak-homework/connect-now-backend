@@ -8,6 +8,7 @@ import (
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/astak-homework/connect-now-backend/profile"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 )
 
 type createInput struct {
@@ -53,16 +54,19 @@ func NewHandler(authUseCase auth.UseCase, profileUseCase profile.UseCase) *Handl
 func (h *Handler) Create(c *gin.Context) {
 	inp := new(createInput)
 	if err := c.BindJSON(inp); err != nil {
+		log.Error().Err(err).Msg("profile.Create: couldn't bind JSON")
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
 	accountId, err := h.authUseCase.SignUp(c.Request.Context(), inp.Password)
 	if err != nil {
+		log.Error().Err(err).Msg("profile.Create: couldn't sing up")
 		c.AbortWithStatus(http.StatusInternalServerError)
 	}
 
 	if err := h.profileUseCase.CreateProfile(c.Request.Context(), toModel(accountId, inp)); err != nil {
+		log.Error().Err(err).Msg("profile.Create: couldn't create profile")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -75,6 +79,7 @@ func (h *Handler) Get(c *gin.Context) {
 
 	profile, err := h.profileUseCase.GetProfile(c.Request.Context(), accountId)
 	if err != nil {
+		log.Error().Err(err).Msg("profile.Get: couldn't get profile")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -85,11 +90,13 @@ func (h *Handler) Get(c *gin.Context) {
 func (h *Handler) Delete(c *gin.Context) {
 	inp := new(deleteInput)
 	if err := c.BindJSON(inp); err != nil {
+		log.Error().Err(err).Msg("profile.Delete: couldn't bind JSON")
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
 	if err := h.profileUseCase.DeleteProfile(c.Request.Context(), inp.ID); err != nil {
+		log.Error().Err(err).Msg("profile.Delete: couldn't delete profile")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
