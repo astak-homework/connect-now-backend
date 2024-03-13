@@ -7,6 +7,7 @@ import (
 
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/astak-homework/connect-now-backend/profile"
+	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -36,7 +37,7 @@ func (r ProfileRepository) CreateProfile(ctx context.Context, profile *models.Pr
 
 	sql := `
 	INSERT INTO profiles (id, first_name, last_name, birth_date, gender, biography, city)
-	VALUES ($1, $2, $3, $4, $5, $6, $6)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
 	_, err := r.conn.Exec(ctx, sql, model.ID, model.FirstName, model.LastName, model.BirthDate, model.Gender, model.Biography, model.City)
@@ -52,7 +53,7 @@ func (r ProfileRepository) GetProfile(ctx context.Context, id string) (*models.P
 	WHERE id = $1
 	`
 
-	err := r.conn.QueryRow(ctx, sql, id).Scan(&model)
+	err := pgxscan.Get(ctx, r.conn, model, sql, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, profile.ErrProfileNotFound
 	} else if err != nil {

@@ -63,6 +63,7 @@ func (h *Handler) Create(c *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("profile.Create: couldn't sing up")
 		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
 
 	if err := h.profileUseCase.CreateProfile(c.Request.Context(), toModel(accountId, inp)); err != nil {

@@ -35,9 +35,9 @@ func (r LoginRepository) CreateLogin(ctx context.Context, passwordHash string) (
 
 func (r LoginRepository) AuthenticateLogin(ctx context.Context, accountId, passwordHash string) error {
 	sql := `
-	SELECT id, user_name, password_hash
+	SELECT id
 	FROM logins
-	WHERE user_name = $1 and password_hash = $2
+	WHERE id = $1 and password_hash = $2
 	`
 
 	rows, err := r.conn.Query(ctx, sql, accountId, passwordHash)
