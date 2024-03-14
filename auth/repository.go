@@ -6,5 +6,5 @@ import (
 
 type LoginRepository interface {
 	CreateLogin(ctx context.Context, passwordHash string) (string, error)
-	AuthenticateLogin(ctx context.Context, accountId, password_hash string) error
+	GetPasswordHash(ctx context.Context, accountId string) (string, error)
 }

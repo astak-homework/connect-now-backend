@@ -28,14 +28,14 @@ func (s *LoginLocalStorage) CreateLogin(ctx context.Context, password string) (s
 	return accountId, nil
 }
 
-func (s *LoginLocalStorage) AuthenticateLogin(ctx context.Context, accountId, password_hash string) error {
+func (s *LoginLocalStorage) GetPasswordHash(ctx context.Context, accountId string) (string, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	h, ok := s.logins[accountId]
-	if !ok || h != password_hash {
-		return auth.ErrUserNotFound
+	if !ok {
+		return "", auth.ErrUserNotFound
 	}
 
-	return nil
+	return h, nil
 }

@@ -7,30 +7,32 @@ import (
 	"github.com/astak-homework/connect-now-backend/auth/repository/mock"
 	"github.com/astak-homework/connect-now-backend/config"
 	"github.com/stretchr/testify/assert"
+	testifyMock "github.com/stretchr/testify/mock"
 )
 
 func TestAuthFlow(t *testing.T) {
 	repo := new(mock.LoginStorageMock)
 	cfg := &config.Auth{
-		HashSalt:   "salt",
 		SigningKey: "secret",
 		TokenTTL:   86400,
 	}
 	uc := NewAuthUseCase(repo, cfg)
 	var (
-		password     = "pass"
-		ctx          = context.Background()
-		passwordHash = "c8b2505b76926abdc733523caa9f439142f66aa7293a7baaac0aed41a191eef6"
+		password = "pass"
+		ctx      = context.Background()
 	)
 
 	// Sign Up
-	repo.On("CreateLogin", passwordHash).Return("id", nil)
+	var passwordHash string
+	repo.On("CreateLogin", testifyMock.AnythingOfType("string")).Return("id", nil).Run(func(args testifyMock.Arguments) {
+		passwordHash = args.Get(0).(string)
+	})
 	accountId, err := uc.SignUp(ctx, password)
 	assert.NoError(t, err)
 	assert.Equal(t, "id", accountId)
 
 	// Sign In (Get Auth Token)
-	repo.On("AuthenticateLogin", accountId, passwordHash).Return(nil)
+	repo.On("GetPasswordHash", accountId).Return(passwordHash, nil)
 	token, err := uc.SignIn(ctx, accountId, password)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)

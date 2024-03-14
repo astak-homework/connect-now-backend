@@ -2,8 +2,10 @@ package postgresql
 
 import (
 	"context"
+	"errors"
 
 	"github.com/astak-homework/connect-now-backend/auth"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -33,21 +35,20 @@ func (r LoginRepository) CreateLogin(ctx context.Context, passwordHash string) (
 	return accountId, nil
 }
 
-func (r LoginRepository) AuthenticateLogin(ctx context.Context, accountId, passwordHash string) error {
+func (r LoginRepository) GetPasswordHash(ctx context.Context, accountId string) (string, error) {
 	sql := `
-	SELECT id
+	SELECT password_hash
 	FROM logins
-	WHERE id = $1 and password_hash = $2
+	WHERE id = $1
 	`
 
-	rows, err := r.conn.Query(ctx, sql, accountId, passwordHash)
-	if err != nil {
-		return err
+	var passwordHash string
+	err := r.conn.QueryRow(ctx, sql, accountId).Scan(&passwordHash)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", auth.ErrUserNotFound
+	} else if err != nil {
+		return "", err
 	}
 
-	if !rows.Next() {
-		return auth.ErrUserNotFound
-	}
-
-	return nil
+	return passwordHash, nil
 }

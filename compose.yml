@@ -6,7 +6,6 @@ services:
       context: .
     container_name: connect_now_api
     environment:
-      CONNECT_AUTH_HASH_SALT_FILE: /run/secrets/auth_hash_salt
       CONNECT_AUTH_SIGNING_KEY_FILE: /run/secrets/auth_signing_key
       CONNECT_POSTGRES_USER_FILE: /run/secrets/postgres_user
       CONNECT_POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
@@ -19,7 +18,6 @@ services:
     ports:
     - "80:80"
     secrets:
-    - auth_hash_salt
     - auth_signing_key
     - postgres_user
     - postgres_password
@@ -55,8 +53,6 @@ services:
     - postgres_db
 
 secrets:
-  auth_hash_salt:
-    environment: "AUTH_HASH_SALT"
   auth_signing_key:
     environment: "AUTH_SIGNING_KEY"
   postgres_user:

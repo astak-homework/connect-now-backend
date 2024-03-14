@@ -2,13 +2,13 @@ package usecase
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"time"
 
 	"github.com/astak-homework/connect-now-backend/auth"
 	"github.com/astak-homework/connect-now-backend/config"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthClaims struct {
@@ -18,7 +18,7 @@ type AuthClaims struct {
 
 type AuthUseCase struct {
 	loginRepo      auth.LoginRepository
-	hashSalt       string
+	hashCost       int
 	signingKey     []byte
 	expireDuration time.Duration
 }
@@ -26,29 +26,28 @@ type AuthUseCase struct {
 func NewAuthUseCase(loginRepo auth.LoginRepository, cfg *config.Auth) *AuthUseCase {
 	return &AuthUseCase{
 		loginRepo:      loginRepo,
-		hashSalt:       cfg.HashSalt,
+		hashCost:       cfg.HashCost,
 		signingKey:     []byte(cfg.SigningKey),
 		expireDuration: time.Second * cfg.TokenTTL,
 	}
 }
 
 func (a *AuthUseCase) SignUp(ctx context.Context, password string) (string, error) {
-	pwd := sha256.New()
-	pwd.Write([]byte(password))
-	pwd.Write([]byte(a.hashSalt))
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), a.hashCost)
+	if err != nil {
+		return "", err
+	}
 
-	passwordHash := fmt.Sprintf("%x", pwd.Sum(nil))
-
-	return a.loginRepo.CreateLogin(ctx, passwordHash)
+	return a.loginRepo.CreateLogin(ctx, string(bytes))
 }
 
 func (a *AuthUseCase) SignIn(ctx context.Context, accountId, password string) (string, error) {
-	pwd := sha256.New()
-	pwd.Write([]byte(password))
-	pwd.Write([]byte(a.hashSalt))
-	password_hash := fmt.Sprintf("%x", pwd.Sum(nil))
+	passwordHash, err := a.loginRepo.GetPasswordHash(ctx, accountId)
+	if err != nil {
+		return "", err
+	}
 
-	err := a.loginRepo.AuthenticateLogin(ctx, accountId, password_hash)
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
 	if err != nil {
 		return "", err
 	}

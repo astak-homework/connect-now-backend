@@ -14,7 +14,7 @@ import (
 var defaultConfiguration []byte
 
 type Auth struct {
-	HashSalt   string        `mapstructure:"hash_salt"`
+	HashCost   int           `mapstructure:"hash_cost"`
 	SigningKey string        `mapstructure:"signing_key"`
 	TokenTTL   time.Duration `mapstructure:"token_ttl"`
 }
@@ -55,15 +55,6 @@ func Init() (*Config, error) {
 }
 
 func initSecrets(config *Config) error {
-	hashSaltFile := viper.GetString("auth.hash_salt_file")
-	if hashSaltFile != "" {
-		value, err := os.ReadFile(hashSaltFile)
-		if err != nil {
-			return err
-		}
-		config.Auth.HashSalt = string(value)
-	}
-
 	signingKeyFile := viper.GetString("auth.signing_key_file")
 	if signingKeyFile != "" {
 		value, err := os.ReadFile(signingKeyFile)

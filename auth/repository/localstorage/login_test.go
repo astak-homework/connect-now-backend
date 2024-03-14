@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/astak-homework/connect-now-backend/auth"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,9 +14,10 @@ func TestGetUser(t *testing.T) {
 	accountId, err := s.CreateLogin(context.Background(), "password")
 	assert.NoError(t, err)
 
-	err = s.AuthenticateLogin(context.Background(), accountId, "password")
+	password, err := s.GetPasswordHash(context.Background(), accountId)
 	assert.NoError(t, err)
+	assert.Equal(t, "password", password)
 
-	err = s.AuthenticateLogin(context.Background(), accountId, "")
-	assert.Error(t, err)
+	_, err = s.GetPasswordHash(context.Background(), "12345")
+	assert.ErrorIs(t, auth.ErrUserNotFound, err)
 }

@@ -15,7 +15,7 @@ func (s *LoginStorageMock) CreateLogin(ctx context.Context, password string) (st
 	return args.Get(0).(string), args.Error(1)
 }
 
-func (s *LoginStorageMock) AuthenticateLogin(ctx context.Context, accountId, password string) error {
-	args := s.Called(accountId, password)
-	return args.Error(0)
+func (s *LoginStorageMock) GetPasswordHash(ctx context.Context, accountId string) (string, error) {
+	args := s.Called(accountId)
+	return args.Get(0).(string), args.Error(1)
 }
