@@ -17,6 +17,7 @@ import (
 	profilehttp "github.com/astak-homework/connect-now-backend/profile/delivery/http"
 	profilepostgres "github.com/astak-homework/connect-now-backend/profile/repository/postgresql"
 	profileusecase "github.com/astak-homework/connect-now-backend/profile/usecase"
+	"github.com/astak-homework/connect-now-backend/resources"
 	"github.com/gin-gonic/gin"
 	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
 	"github.com/jackc/pgx/v5"
@@ -49,6 +50,7 @@ func (a *App) Run(port string) error {
 	router.Use(
 		gin.Recovery(),
 		gin.Logger(),
+		resources.Localize("./resources"),
 	)
 
 	// Set up http handlers
