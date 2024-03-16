@@ -7,18 +7,19 @@ import (
 	"github.com/astak-homework/connect-now-backend/auth"
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/astak-homework/connect-now-backend/profile"
+	"github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
 
 type createInput struct {
-	FirstName string           `json:"first_name"`
-	LastName  string           `json:"second_name"`
-	BirthDate models.CivilTime `json:"birthdate"`
-	Gender    models.Gender    `json:"gender"`
-	Biography string           `json:"biography"`
-	City      string           `json:"city"`
-	Password  string           `json:"password"`
+	FirstName string        `json:"first_name" binding:"required,max=50"`
+	LastName  string        `json:"second_name" binding:"required,max=50"`
+	BirthDate string        `json:"birthdate" binding:"datetime=2006-01-02"`
+	Gender    models.Gender `json:"gender" binding:"oneof=male female"`
+	Biography string        `json:"biography" binding:"required"`
+	City      string        `json:"city" binding:"required,max=50"`
+	Password  string        `json:"password" binding:"required,max=72"`
 }
 
 type createResponse struct {
@@ -26,17 +27,17 @@ type createResponse struct {
 }
 
 type getResponse struct {
-	ID        string           `json:"id"`
-	FirstName string           `json:"first_name"`
-	LastName  string           `json:"second_name"`
-	BirthDate models.CivilTime `json:"birthdate"`
-	Gender    models.Gender    `json:"gender"`
-	Biography string           `json:"biography"`
-	City      string           `json:"city"`
+	ID        string        `json:"id"`
+	FirstName string        `json:"first_name"`
+	LastName  string        `json:"second_name"`
+	BirthDate string        `json:"birthdate"`
+	Gender    models.Gender `json:"gender"`
+	Biography string        `json:"biography"`
+	City      string        `json:"city"`
 }
 
 type deleteInput struct {
-	ID string `json:"id"`
+	ID string `json:"id" binding:"uuid"`
 }
 
 type Handler struct {
@@ -53,9 +54,9 @@ func NewHandler(authUseCase auth.UseCase, profileUseCase profile.UseCase) *Handl
 
 func (h *Handler) Create(c *gin.Context) {
 	inp := new(createInput)
-	if err := c.BindJSON(inp); err != nil {
+	if err := c.ShouldBindJSON(inp); err != nil {
 		log.Error().Err(err).Msg("profile.Create: couldn't bind JSON")
-		c.AbortWithStatus(http.StatusBadRequest)
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"description": i18n.MustGetMessage(c, "invalid_data")})
 		return
 	}
 
@@ -66,7 +67,14 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.profileUseCase.CreateProfile(c.Request.Context(), toModel(accountId, inp)); err != nil {
+	model, err := toModel(accountId, inp)
+	if err != nil {
+		log.Error().Err(err).Msg("profile.Create: couldn't convert input to model")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.profileUseCase.CreateProfile(c.Request.Context(), model); err != nil {
 		log.Error().Err(err).Msg("profile.Create: couldn't create profile")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -90,9 +98,9 @@ func (h *Handler) Get(c *gin.Context) {
 
 func (h *Handler) Delete(c *gin.Context) {
 	inp := new(deleteInput)
-	if err := c.BindJSON(inp); err != nil {
+	if err := c.ShouldBindJSON(inp); err != nil {
 		log.Error().Err(err).Msg("profile.Delete: couldn't bind JSON")
-		c.AbortWithStatus(http.StatusBadRequest)
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"description": i18n.MustGetMessage(c, "invalid_data")})
 		return
 	}
 
@@ -110,21 +118,25 @@ func toGetResponse(p *models.Profile) *getResponse {
 		ID:        p.ID,
 		FirstName: p.FirstName,
 		LastName:  p.LastName,
-		BirthDate: models.CivilTime(p.BirthDate),
+		BirthDate: time.Time(p.BirthDate).Format("2006-01-02"),
 		Gender:    p.Gender,
 		Biography: p.Biography,
 		City:      p.City,
 	}
 }
 
-func toModel(accountId string, i *createInput) *models.Profile {
+func toModel(accountId string, i *createInput) (*models.Profile, error) {
+	birthDate, err := time.Parse("2006-01-02", i.BirthDate)
+	if err != nil {
+		return nil, err
+	}
 	return &models.Profile{
 		ID:        accountId,
 		FirstName: i.FirstName,
 		LastName:  i.LastName,
-		BirthDate: time.Time(i.BirthDate),
+		BirthDate: birthDate,
 		Gender:    i.Gender,
 		Biography: i.Biography,
 		City:      i.City,
-	}
+	}, nil
 }

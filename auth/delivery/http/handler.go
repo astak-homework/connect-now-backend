@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/astak-homework/connect-now-backend/auth"
+	"github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
@@ -14,8 +15,8 @@ type Handler struct {
 }
 
 type signInput struct {
-	AccountId string `json:"id"`
-	Password  string `json:"password"`
+	AccountId string `json:"id" binding:"uuid"`
+	Password  string `json:"password" binding:"min=8,max=72"`
 }
 
 type signInResponse struct {
@@ -30,9 +31,9 @@ func NewHandler(useCase auth.UseCase) *Handler {
 
 func (h *Handler) SignIn(c *gin.Context) {
 	inp := new(signInput)
-	if err := c.BindJSON(inp); err != nil {
+	if err := c.ShouldBindJSON(inp); err != nil {
 		log.Error().Err(err).Msg("auth.SignIn: couldn't bind JSON")
-		c.AbortWithStatus(http.StatusBadRequest)
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"description": i18n.MustGetMessage(c, "invalid_data")})
 		return
 	}
 
