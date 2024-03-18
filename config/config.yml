@@ -2,7 +2,9 @@ port: 80
 
 auth:
   hash_cost: 14
-  signing_key: signing_key
+  signing_key:
+  - 54
+  - 32
   token_ttl: 86400
 
 postgres:

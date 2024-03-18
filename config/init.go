@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	_ "embed"
+	"encoding/base64"
 	"os"
 	"strings"
 	"time"
@@ -15,7 +16,7 @@ var defaultConfiguration []byte
 
 type Auth struct {
 	HashCost   int           `mapstructure:"hash_cost"`
-	SigningKey string        `mapstructure:"signing_key"`
+	SigningKey []byte        `mapstructure:"signing_key"`
 	TokenTTL   time.Duration `mapstructure:"token_ttl"`
 }
 
@@ -61,7 +62,9 @@ func initSecrets(config *Config) error {
 		if err != nil {
 			return err
 		}
-		config.Auth.SigningKey = string(value)
+		if config.Auth.SigningKey, err = base64.StdEncoding.DecodeString(string(value)); err != nil {
+			return err
+		}
 	}
 
 	var dbFile = viper.GetString("postgres.db_file")

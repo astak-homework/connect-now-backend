@@ -13,7 +13,7 @@ import (
 func TestAuthFlow(t *testing.T) {
 	repo := new(mock.LoginStorageMock)
 	cfg := &config.Auth{
-		SigningKey: "secret",
+		SigningKey: []byte("secret"),
 		TokenTTL:   86400,
 	}
 	uc := NewAuthUseCase(repo, cfg)
