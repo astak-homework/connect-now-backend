@@ -19,7 +19,7 @@ func TestSignIn(t *testing.T) {
 	RegisterHTTPEndpoints(r, uc)
 
 	signInBody := &signInput{
-		AccountId: "testuser",
+		AccountId: "a7e906a2-eda2-4c68-b4c0-dcb4eaf31579",
 		Password:  "testpass",
 	}
 	body, err := json.Marshal(signInBody)

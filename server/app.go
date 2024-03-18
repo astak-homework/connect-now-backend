@@ -13,11 +13,13 @@ import (
 	authpostgres "github.com/astak-homework/connect-now-backend/auth/repository/postgresql"
 	authusecase "github.com/astak-homework/connect-now-backend/auth/usecase"
 	"github.com/astak-homework/connect-now-backend/config"
+	"github.com/astak-homework/connect-now-backend/errors"
 	"github.com/astak-homework/connect-now-backend/profile"
 	profilehttp "github.com/astak-homework/connect-now-backend/profile/delivery/http"
 	profilepostgres "github.com/astak-homework/connect-now-backend/profile/repository/postgresql"
 	profileusecase "github.com/astak-homework/connect-now-backend/profile/usecase"
 	"github.com/astak-homework/connect-now-backend/resources"
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
 	"github.com/jackc/pgx/v5"
@@ -50,7 +52,9 @@ func (a *App) Run(port string) error {
 	router.Use(
 		gin.Recovery(),
 		gin.Logger(),
-		resources.Localize("./resources"),
+		resources.Localize("./lang"),
+		requestid.New(),
+		errors.HttpResponseErrorHandler,
 	)
 
 	// Set up http handlers

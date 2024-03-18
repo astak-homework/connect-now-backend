@@ -5,11 +5,10 @@ import (
 	"time"
 
 	"github.com/astak-homework/connect-now-backend/auth"
+	"github.com/astak-homework/connect-now-backend/errors"
 	"github.com/astak-homework/connect-now-backend/models"
 	"github.com/astak-homework/connect-now-backend/profile"
-	"github.com/gin-contrib/i18n"
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 )
 
 type createInput struct {
@@ -55,28 +54,24 @@ func NewHandler(authUseCase auth.UseCase, profileUseCase profile.UseCase) *Handl
 func (h *Handler) Create(c *gin.Context) {
 	inp := new(createInput)
 	if err := c.ShouldBindJSON(inp); err != nil {
-		log.Error().Err(err).Msg("profile.Create: couldn't bind JSON")
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"description": i18n.MustGetMessage(c, "invalid_data")})
+		c.Error(errors.NewBadRequest().Err(err).Log("profile.Create: couldn't bind JSON").InvalidData())
 		return
 	}
 
 	accountId, err := h.authUseCase.SignUp(c.Request.Context(), inp.Password)
 	if err != nil {
-		log.Error().Err(err).Msg("profile.Create: couldn't sing up")
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.Error(errors.NewInternal().Err(err).Log("profile.Create: couldn't sign up").Internal())
 		return
 	}
 
 	model, err := toModel(accountId, inp)
 	if err != nil {
-		log.Error().Err(err).Msg("profile.Create: couldn't convert input to model")
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.Error(errors.NewInternal().Err(err).Log("profile.Create: couldn't convert input to model").Internal())
 		return
 	}
 
 	if err := h.profileUseCase.CreateProfile(c.Request.Context(), model); err != nil {
-		log.Error().Err(err).Msg("profile.Create: couldn't create profile")
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.Error(errors.NewInternal().Err(err).Log("profile.Create: couldn't create profile").Internal())
 		return
 	}
 
@@ -88,8 +83,7 @@ func (h *Handler) Get(c *gin.Context) {
 
 	profile, err := h.profileUseCase.GetProfile(c.Request.Context(), accountId)
 	if err != nil {
-		log.Error().Err(err).Msg("profile.Get: couldn't get profile")
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.Error(errors.NewInternal().Err(err).Log("profile.Get: couldn't get profile").Internal())
 		return
 	}
 
@@ -99,14 +93,12 @@ func (h *Handler) Get(c *gin.Context) {
 func (h *Handler) Delete(c *gin.Context) {
 	inp := new(deleteInput)
 	if err := c.ShouldBindJSON(inp); err != nil {
-		log.Error().Err(err).Msg("profile.Delete: couldn't bind JSON")
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"description": i18n.MustGetMessage(c, "invalid_data")})
+		c.Error(errors.NewBadRequest().Err(err).Log("profile.Delete: couldn't bind JSON").InvalidData())
 		return
 	}
 
 	if err := h.profileUseCase.DeleteProfile(c.Request.Context(), inp.ID); err != nil {
-		log.Error().Err(err).Msg("profile.Delete: couldn't delete profile")
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.Error(errors.NewInternal().Err(err).Log("profile.Delete: couldn't delete profile").Internal())
 		return
 	}
 

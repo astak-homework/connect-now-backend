@@ -9,7 +9,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 
 FROM scratch
 COPY --from=build /bin/app /bin/app
-COPY --from=build /src/resources/*.json /bin/resources/
+COPY --from=build /src/lang/*.json /bin/lang/
 
 WORKDIR /bin
 ENTRYPOINT ["/bin/app"]

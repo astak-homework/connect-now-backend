@@ -1,13 +1,11 @@
 package http
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/astak-homework/connect-now-backend/auth"
-	"github.com/gin-contrib/i18n"
+	"github.com/astak-homework/connect-now-backend/errors"
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 )
 
 type Handler struct {
@@ -32,19 +30,22 @@ func NewHandler(useCase auth.UseCase) *Handler {
 func (h *Handler) SignIn(c *gin.Context) {
 	inp := new(signInput)
 	if err := c.ShouldBindJSON(inp); err != nil {
-		log.Error().Err(err).Msg("auth.SignIn: couldn't bind JSON")
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"description": i18n.MustGetMessage(c, "invalid_data")})
+		c.Error(errors.NewBadRequest().Err(err).Log("auth.SignIn: couldn't bind JSON").InvalidData())
 		return
 	}
 
 	token, err := h.useCase.SignIn(c.Request.Context(), inp.AccountId, inp.Password)
 	if err != nil {
-		log.Error().Err(err).Msg("auth.SignIn: couldn't sign in")
+		logMsg := "auth.SignIn: couldn't sign in"
 		if errors.Is(err, auth.ErrUserNotFound) {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.Error(errors.NewNotFound().Err(err).Log(logMsg).UserNotFound())
 			return
 		}
-		c.AbortWithStatus(http.StatusInternalServerError)
+		if errors.Is(err, auth.ErrMismatchedHashAndPassword) {
+			c.Error(errors.NewBadRequest().Err(err).Log(logMsg).IncorrectPassword())
+			return
+		}
+		c.Error(errors.NewInternal().Err(err).Log(logMsg).Internal())
 		return
 	}
 

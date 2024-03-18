@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -48,6 +49,9 @@ func (a *AuthUseCase) SignIn(ctx context.Context, accountId, password string) (s
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		return "", auth.ErrMismatchedHashAndPassword
+	}
 	if err != nil {
 		return "", err
 	}
