@@ -2,6 +2,7 @@ package localcache
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/astak-homework/connect-now-backend/models"
@@ -50,4 +51,18 @@ func (s *ProfileLocalStorage) DeleteProfile(ctx context.Context, id string) erro
 
 	delete(s.profiles, p.ID)
 	return nil
+}
+
+func (s *ProfileLocalStorage) SearchProfile(ctx context.Context, firstName, lastName string) ([]*models.Profile, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	result := []*models.Profile{}
+	for _, v := range s.profiles {
+		if strings.HasPrefix(v.FirstName, firstName) && strings.HasPrefix(v.LastName, lastName) {
+			result = append(result, v)
+		}
+	}
+
+	return result, nil
 }

@@ -25,3 +25,8 @@ func (s *ProfileStorageMock) DeleteProfile(ctx context.Context, id string) error
 	args := s.Called(id)
 	return args.Error(0)
 }
+
+func (s *ProfileStorageMock) SearchProfile(ctx context.Context, firstName, lastName string) ([]*models.Profile, error) {
+	args := s.Called(firstName, lastName)
+	return args.Get(0).([]*models.Profile), args.Error(1)
+}

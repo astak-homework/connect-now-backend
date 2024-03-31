@@ -11,4 +11,5 @@ func RegisterHTTPEndpoints(router *gin.RouterGroup, authUseCase auth.UseCase, pr
 
 	router.POST("/register", h.Create)
 	router.GET("/get/:id", h.Get)
+	router.GET("/search", h.Search)
 }

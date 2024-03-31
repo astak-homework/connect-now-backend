@@ -77,6 +77,24 @@ func (r ProfileRepository) DeleteProfile(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r ProfileRepository) SearchProfile(ctx context.Context, firstName, lastName string) ([]*models.Profile, error) {
+	sql := `
+	SELECT id, first_name, last_name, birth_date, gender, biography, city
+	FROM profiles
+	WHERE first_name like $1 and last_name like $2
+	ORDER BY id
+	`
+
+	var profiles []*Profile
+	err := pgxscan.Select(ctx, r.conn, &profiles, sql, firstName+"%", lastName+"%")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return toProfiles(profiles), nil
+}
+
 func toModel(p *models.Profile) *Profile {
 	return &Profile{
 		ID:        p.ID,
@@ -99,4 +117,12 @@ func toProfile(p *Profile) *models.Profile {
 		Biography: p.Biography,
 		City:      p.City,
 	}
+}
+
+func toProfiles(ps []*Profile) []*models.Profile {
+	profiles := []*models.Profile{}
+	for _, p := range ps {
+		profiles = append(profiles, toProfile(p))
+	}
+	return profiles
 }

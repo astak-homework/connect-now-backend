@@ -28,3 +28,7 @@ func (p ProfileUseCase) GetProfile(ctx context.Context, id string) (*models.Prof
 func (p ProfileUseCase) DeleteProfile(ctx context.Context, id string) error {
 	return p.profileRepo.DeleteProfile(ctx, id)
 }
+
+func (p ProfileUseCase) SearchProfile(ctx context.Context, firstName, lastName string) ([]*models.Profile, error) {
+	return p.profileRepo.SearchProfile(ctx, firstName, lastName)
+}

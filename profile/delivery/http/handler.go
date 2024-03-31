@@ -39,6 +39,11 @@ type deleteInput struct {
 	ID string `json:"id" binding:"uuid"`
 }
 
+type searchInput struct {
+	FirstName string `form:"first_name" binding:"required"`
+	LastName  string `form:"last_name" binding:"required"`
+}
+
 type Handler struct {
 	authUseCase    auth.UseCase
 	profileUseCase profile.UseCase
@@ -105,6 +110,23 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+func (h *Handler) Search(c *gin.Context) {
+	inp := new(searchInput)
+
+	if err := c.ShouldBind(&inp); err != nil {
+		c.Error(errors.NewBadRequest().Err(err).Log("profile.Search: couldn't bind query string").InvalidData())
+		return
+	}
+
+	profiles, err := h.profileUseCase.SearchProfile(c.Request.Context(), inp.FirstName, inp.LastName)
+	if err != nil {
+		c.Error(errors.NewInternal().Err(err).Log("profile.Search: couldn't search profiles").Internal())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, toSearchResponse(profiles))
+}
+
 func toGetResponse(p *models.Profile) *getResponse {
 	return &getResponse{
 		ID:        p.ID,
@@ -115,6 +137,14 @@ func toGetResponse(p *models.Profile) *getResponse {
 		Biography: p.Biography,
 		City:      p.City,
 	}
+}
+
+func toSearchResponse(ps []*models.Profile) []*getResponse {
+	response := []*getResponse{}
+	for _, p := range ps {
+		response = append(response, toGetResponse(p))
+	}
+	return response
 }
 
 func toModel(accountId string, i *createInput) (*models.Profile, error) {
