@@ -1,6 +1,5 @@
-version: "3.8"
 services:
-    db:
+    pgmaster:
       ports:
       - "5432:5432"
 

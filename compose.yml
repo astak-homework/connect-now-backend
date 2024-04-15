@@ -1,4 +1,15 @@
-version: "3.8"
+x-postgres-common:
+  &postgres-common
+  image: postgres:16.2
+  user: postgres
+  restart: always
+  healthcheck:
+    test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+    interval: 1s
+    timeout: 5s
+    retries: 10
+  networks:
+  - connect_now
 
 services:
   api:
@@ -10,7 +21,7 @@ services:
       CONNECT_POSTGRES_USER_FILE: /run/secrets/postgres_user
       CONNECT_POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       CONNECT_POSTGRES_DB_FILE: /run/secrets/postgres_db
-      CONNECT_POSTGRES_HOST: db
+      CONNECT_POSTGRES_HOST: pgmaster
       GIN_MODE: release
     depends_on:
       migrate:
@@ -22,35 +33,62 @@ services:
     - postgres_user
     - postgres_password
     - postgres_db
+    networks:
+    - connect_now
   
   migrate:
     image: migrate/migrate:v4.17.0
     volumes:
     - ./migrations:/migrations
-    command: ["-path", "/migrations", "-database", "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable", "up"]
+    command: ["-path", "/migrations", "-database", "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pgmaster:5432/${POSTGRES_DB}?sslmode=disable", "up"]
     depends_on:
-      db:
+      pgmaster:
         condition: service_healthy
+    networks:
+    - connect_now
 
-  db:
-    container_name: connect_now_postgresql
-    image: postgres:16.2
-    restart: always
+  pgmaster:
+    <<: *postgres-common
     volumes:
-    - postgres_data:/var/lib/postgresql/data
+    - pgmaster_data:/var/lib/postgresql/data
+    - ./volumes/pgmaster/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh
     environment:
       POSTGRES_USER_FILE: /run/secrets/postgres_user
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB_FILE: /run/secrets/postgres_db
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 1s
-      timeout: 5s
-      retries: 10
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256\nhost replication replicator 172.23.0.0/16 md5"
+    command: |
+      postgres
+      -c ssl=off
+      -c wal_level=replica
+      -c max_wal_senders=4
     secrets:
     - postgres_user
     - postgres_password
     - postgres_db
+    - postgres_replicator_password
+  
+  pgslave:
+    <<: *postgres-common
+    volumes:
+    - pgslave_data:/var/lib/postgresql/data
+    - ./volumes/pgslave/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh
+    environment:
+      PGUSER: replicator
+      PGPASSWORD: ${POSTGRES_REPLICATOR_PASSWORD}
+    command: |
+      bash -c "
+      until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=pgmaster -w
+      do
+      echo 'Waiting for master to connect...'
+      sleep 1s
+      done
+      echo 'Backup done, starting replica...'
+      chmod 0700 /var/lib/postgresql/data
+      postgres
+      "
+    depends_on:
+    - pgmaster
 
 secrets:
   auth_signing_key:
@@ -61,6 +99,16 @@ secrets:
     environment: "POSTGRES_PASSWORD"
   postgres_db:
     environment: "POSTGRES_DB"
+  postgres_replicator_password:
+    environment: "POSTGRES_REPLICATOR_PASSWORD"
 
 volumes:
-  postgres_data:
+  pgmaster_data:
+  pgslave_data:
+
+networks:
+  connect_now:
+    name: connect_now
+    ipam:
+      config:
+      - subnet: 172.23.0.0/16

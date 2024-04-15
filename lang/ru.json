@@ -1,7 +1,0 @@
-{
-    "invalid_data": "Невалидные данные",
-    "user_not_found": "Пользователь не найден",
-    "profile_not_found": "Анкета не найдена",
-    "incorrect_password": "Неверный пароль",
-    "internal_server_error": "Внутренняя ошибка сервера"
-}
